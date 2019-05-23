@@ -23,7 +23,6 @@ import java.util.Properties;
 @EnableJpaRepositories(basePackages = "com.space.repository")
 public class AppConfig
 {
-    /*TODO: протестировать на tomcat 9*/
     @Bean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory()
     {
@@ -68,7 +67,6 @@ public class AppConfig
     {
         Properties properties = new Properties();
         properties.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQL5Dialect");
-        properties.setProperty("hibernate.current_session_context_class", "thread");
         properties.setProperty("show_sql", "true");
 
         return properties;

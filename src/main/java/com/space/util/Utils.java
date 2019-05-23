@@ -79,6 +79,6 @@ public class Utils
         double t2 = t / t1;
         Double rating = (double) Math.round(t2 * 100) / 100;
         ship.setRating(rating);
-        log.debug("Ship rating: " + rating);
+        log.info("Ship rating: " + rating);
     }
 }

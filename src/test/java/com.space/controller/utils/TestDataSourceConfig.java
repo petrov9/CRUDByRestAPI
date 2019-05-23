@@ -70,7 +70,6 @@ public class TestDataSourceConfig
         Properties properties = new Properties();
         properties.setProperty("hibernate.hbm2ddl.auto", "none");
         properties.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQL5Dialect");
-        properties.setProperty("hibernate.current_session_context_class", "thread");
         properties.setProperty("show_sql", "true");
 
         return properties;

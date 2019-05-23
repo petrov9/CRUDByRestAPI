@@ -5,14 +5,11 @@ import com.space.model.ShipRequest;
 import com.space.util.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
-import org.hibernate.query.Query;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.criteria.*;
 import java.util.*;
@@ -23,14 +20,13 @@ public class ShipRepository implements org.springframework.data.repository.Repos
     private static final Logger log = Logger.getLogger(ShipRepository.class);
 
     @Autowired
-    private EntityManagerFactory entityManagerFactory;
+    private EntityManager entityManager;
 
     public List<Ship> getShips(ShipRequest shipRequest)
     {
-        log.debug("Getting all ships");
-        Transaction transaction = session().beginTransaction();
+        log.info("Getting all ships");
 
-        CriteriaBuilder builder = session().getCriteriaBuilder();
+        CriteriaBuilder builder = entityManager.getCriteriaBuilder();
         CriteriaQuery<Ship> query = builder.createQuery(Ship.class);
         Root<Ship> root = query.from(Ship.class);
 
@@ -68,55 +64,45 @@ public class ShipRepository implements org.springframework.data.repository.Repos
         if (shipRequest.getOrder() != null)
             query.orderBy(builder.asc(root.get(shipRequest.getOrder().getFieldName())));
 
-        Query<Ship> q = session().createQuery(query);
-        List<Ship> allShips = q.getResultList();
+        List<Ship> allShips = entityManager.createQuery(query).getResultList();
 
-        transaction.commit();
-
-        log.debug("Got ships: " + allShips.size());
+        log.info("Got ships: " + allShips.size());
 
         return allShips;
     }
 
     public Ship createShip(Ship ship)
     {
-        log.debug("Create ship " + ship.toString());
-        Transaction tx = session().beginTransaction();
-        Long id = (Long) session().save(ship);
-        Ship savedShip = session().get(Ship.class, id);
-        tx.commit();
+        log.info("Create ship " + ship);
 
-        log.debug("Created ship with id: " + id);
+        entityManager.persist(ship);
+        entityManager.flush();
 
-        return savedShip;
+        log.info("Created ship with id: " + ship.getId());
+        return ship;
     }
 
     public Ship getShip(String id)
     {
-        log.debug("Get ship by id: " + id);
-        Transaction tx = session().beginTransaction();
-        CriteriaBuilder builder = session().getCriteriaBuilder();
+        log.info("Get ship by id: " + id);
+
+        CriteriaBuilder builder = entityManager.getCriteriaBuilder();
         CriteriaQuery<Ship> query = builder.createQuery(Ship.class);
         Root<Ship> root = query.from(Ship.class);
 
         query.select(root).where(builder.equal(root.get("id"), id));
 
-        Query<Ship> q = session().createQuery(query);
-        Ship ship = q.uniqueResult();
+        Ship ship = entityManager.createQuery(query).getResultStream().findFirst().orElse(null);
 
-        tx.commit();
-
-        log.debug("Got ship: " + ship.toString());
-
+        log.info("Got ship: " + ship);
         return ship;
     }
 
     public Ship updateShip(Ship ship)
     {
-        log.debug("Update ship: " + ship);
-        Transaction transaction = session().beginTransaction();
+        log.info("Update ship: " + ship);
 
-        Ship updateShip = session().get(Ship.class, ship.getId());
+        Ship updateShip = entityManager.find(Ship.class, ship.getId());
         if (updateShip == null)
             return null;
         if (StringUtils.isNotEmpty(ship.getName()))
@@ -135,39 +121,29 @@ public class ShipRepository implements org.springframework.data.repository.Repos
             updateShip.setCrewSize(ship.getCrewSize());
         Utils.countRating(updateShip);
 
-        Ship updatedShip = (Ship) session().merge(updateShip);
+        Ship updatedShip = entityManager.merge(updateShip);
 
-        transaction.commit();
-
-        log.debug("Ship is updated");
-
+        log.info("Ship is updated");
         return updatedShip;
     }
 
     public Ship deleteShip(Long id)
     {
-        log.debug("Delete ship by id: " + id);
-        Transaction tx = session().beginTransaction();
-        Ship deleteShip = session().get(Ship.class, id);
+        log.info("Delete ship by id: " + id);
+
+        Ship deleteShip = entityManager.find(Ship.class, id);
         if (deleteShip == null)
             return null;
 
-        session().delete(deleteShip);
-        tx.commit();
+        entityManager.remove(deleteShip);
 
-        log.debug("Ship is deleted");
+        log.info("Ship is deleted");
         return deleteShip;
     }
 
-    private Session session()
+    public void setEntityManager(EntityManagerFactory entityManagerFactory)
     {
-        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
-        return sessionFactory.getCurrentSession();
-    }
-
-    public void setEntityManagerFactory(EntityManagerFactory entityManagerFactory)
-    {
-        this.entityManagerFactory = entityManagerFactory;
+        this.entityManager = entityManagerFactory.createEntityManager();
 
     }
 }

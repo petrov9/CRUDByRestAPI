@@ -428,7 +428,3 @@ function processDelete(root, id) {
     Delete(root + "rest/ships/" + id);
     processSearch(root, 1);
 }
-
-    
-        
-     
